@@ -10,42 +10,6 @@
   - Minimal, performant, and lets you build your stack your way.
 - **Database:** PostgreSQL  
   - Robust, scalable, and ideal for structured data.
-
----
-
-### 2. Rationale and Comparisons
-
-#### Frontend Frameworks
-
-| Framework | License | Led by         | Community Governance | Language      | File Type     | Learning Curve | Notable          |
-|-----------|---------|----------------|---------------------|---------------|---------------|----------------|------------------|
-| React     | MIT     | Meta (Facebook)| Limited             | JS/TS + JSX   | .js/.tsx      | Moderate       | Most popular     |
-| Angular   | MIT     | Google         | Limited             | TypeScript    | .ts/.html     | Hard           | Enterprise       |
-| **Vue.js**| MIT     | Community      | Open/Active         | JS/TS         | .vue          | Easy           | Very popular     |
-| Svelte    | MIT     | Community      | Open/Active         | JS/TS         | .svelte       | Easiest        | Fast-growing     |
-
-- All use JavaScript/TypeScript, but Vue.js stands out for openness and ease of use.
-- Vue.js uses single file components (`.vue`), splitting template, logic, and style.
-
-#### Backend in Go (Gin)
-
-- **Gin** is lightweight, expressive, and very popular in the Go ecosystem.
-- Gives you routing, middleware, and JSON handling—but you assemble your own architecture (ORM, sessions, etc.).
-- Perfect for containerization (Docker/Kubernetes).
-
-##### Gin vs. Echo
-
-| Feature      | Gin                       | Echo                      |
-|--------------|---------------------------|---------------------------|
-| API          | Minimal, expressive       | More features out of box  |
-| Performance  | Extremely fast            | Extremely fast            |
-| Middleware   | Large ecosystem           | Many built-in             |
-| Documentation| Clear, extensive          | Good                      |
-| Community    | Very active               | Active                    |
-
-- Gin is often chosen for its elegance and popularity; Echo for its all-in-one approach.
-- Both are suitable, but Gin is recommended if you prefer its style.
-
 ---
 
 ### 3. Typical App Architecture
@@ -129,25 +93,28 @@ TAPRE is an all-in-one real estate toolkit designed for small real estate invest
 
 ## Roadmap
 1. **MVP**: Core valuation, maintenance alerts, receipt/OCR, rent collection, document storage, basic listing
+   - **Duration:** 6-8 weeks
 2. **Deployment & Containerization**: Docker, Kubernetes manifests, cloud/self-hosting docs
+   - **Duration:** 2 weeks
 3. **Financial Optimization Tools**: Tax optimization, deduction suggestions, tax software integration, landlord tax guides
+   - **Duration:** 2-3 weeks
 4. **Mobile App**: React Native app for on-the-go management
+   - **Duration:** 2-3 months
 5. **AI-Driven Insights**: Portfolio analytics, ROI/cash flow advice, predictive trends, advanced analytics
+   - **Duration:** 1-2 months
 6. **Local Service Marketplace**: Provider listings, booking interface, commission system
-
-## Competitive Advantage
-TAPRE is not just a management tool—it’s a wealth-building partner. By focusing on actionable insights, tax savings, and repair efficiency, TAPRE stands apart from Stessa, RentRedi, and AppFolio, offering features tailored to small investors’ real needs.
+   - **Duration:** 1-2 months
 
 ## Development Timeline & Person Hours
 
 | Phase                                 | Estimated Hours | Estimated Duration |
 |----------------------------------------|-----------------|-------------------|
-| MVP (Core features)                    | 80              | 2-4 months        |
-| Deployment & Containerization          | 20              | 2-3 weeks         |
-| Financial Optimization Tools           | 40              | 1-2 months        |
+| MVP (Core features)                    | 80              | 6-8 weeks         |
+| Deployment & Containerization          | 20              | 2 weeks           |
+| Financial Optimization Tools           | 40              | 2-3 weeks         |
 | Mobile App (Core features)             | 60              | 2-3 months        |
-| AI-Driven Insights                     | 30              | 1-2 months        |
-| Local Service Marketplace              | 50              | 1-2 months        |
+| AI-Driven Insights                     | 40              | 1-2 months        |
+| Local Service Marketplace              | 40              | 1-2 months        |
 | **Total**                              | **280**         | **10-22 months**   |
 
 > **Note:** These are rough estimates and actual time may vary based on feature complexity, learning curve, and unforeseen challenges. Timelines now assume part-time development (3-7 hours/week).
@@ -216,9 +183,3 @@ This project is licensed under the GNU General Public License v3.0 (GPLv3). See 
 
 ## The TAPRE Project is a community-driven effort. Contributions, feedback, and suggestions are welcome! Join us in building a powerful tool for real estate investors.
 ## Development & Contribution
-
-### Software Development
-Adam Roy (Creator, Lead Developer)
-
-### Marketing & Community
-Charlie Erikson (Marketing Lead, Community Manager)
