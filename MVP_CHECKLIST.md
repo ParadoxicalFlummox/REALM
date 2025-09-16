@@ -6,7 +6,7 @@ This document converts the in-repo todo list into an expanded, ordered checklist
 
 ---
 
-## 1) Fix initializers & main
+## 1) Fix initializers & main DONE
 - Purpose: Ensure the application can build and connect to the database.
 - Subtasks:
   - Fix package name typo `initalizers` → `initializers` in `backend/initializers/*.go`.
@@ -19,7 +19,7 @@ This document converts the in-repo todo list into an expanded, ordered checklist
 - Estimate: 1–2 hours.
 
 
-## 2) Fix model definitions
+## 2) Fix model definitions DONE
 - Purpose: Ensure models are usable by GORM and JSON serialization.
 - Subtasks:
   - Export model types and fields (capitalize names).
@@ -31,7 +31,7 @@ This document converts the in-repo todo list into an expanded, ordered checklist
 - Estimate: 1–3 hours.
 
 
-## 3) Add migration runner
+## 3) Add migration runner DONE
 - Purpose: Automatically create the necessary tables in the database during startup (dev convenience).
 - Subtasks:
   - Implement `backend/migrate/migrate.go` with `RunMigrations()` calling `initializers.DB.AutoMigrate(&models.User{}, &models.Property{}, &models.FinancialRecord{})`.
@@ -41,7 +41,7 @@ This document converts the in-repo todo list into an expanded, ordered checklist
 - Estimate: 30–60 minutes.
 
 
-## 4) Seed default admin & env docs
+## 4) Seed default admin & env docs DONE
 - Purpose: Provide a default admin for initial setup and document environment variables.
 - Subtasks:
   - Add `.env.example` with `DB_CREDS`, `JWT_SECRET`, and other variables.
@@ -210,7 +210,3 @@ This document converts the in-repo todo list into an expanded, ordered checklist
 - User can log incomes/expenses per property
 - Dashboard shows cashflow metrics and simple charts
 - App runs locally via `docker-compose up` with a Postgres DB
-
-
-# Want me to apply changes?
-I can implement the top-priority tasks (1–3) now and run a local build to verify. Say "Proceed" and I'll apply the changes to the repo. Otherwise, I can make more edits or refine estimates.
