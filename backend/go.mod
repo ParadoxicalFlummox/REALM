@@ -1,4 +1,4 @@
-module gin
+module github.com/ParadoxicalFlummox/TAPRE/backend
 
 go 1.24.0
 
