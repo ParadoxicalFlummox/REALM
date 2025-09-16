@@ -1,13 +1,13 @@
 package main
 
 import (
-	"log"
+	"github.com/ParadoxicalFlummox/TAPRE/backend/initializers"
 	"github.com/gin-gonic/gin"
-	""
 )
 
 func init() {
-	initalizers.LoadEnvVariables()
+	initializers.LoadEnvVariables()
+	initializers.ConnectToDB()
 }
 
 func main() {

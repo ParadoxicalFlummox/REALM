@@ -5,9 +5,9 @@
 ### 1. Chosen Tech Stack
 
 - **Frontend:** Vue.js  
-  - Open source, community-driven, approachable, and flexible.
+  - Open source, community driven, approachable, and flexible.
 - **Backend:** Go (Gin)  
-  - Minimal, performant, and lets you build your stack your way.
+  - Minimal, performant, just works.
 - **Database:** PostgreSQL  
   - Robust, scalable, and ideal for structured data.
 ---
@@ -39,7 +39,6 @@ PostgreSQL Database
 
 - **Vue.js + Gin + PostgreSQL** is a highly open, flexible, and modern stack.
 - Each layer is container-friendly and widely supported.
-- You have control over each part, with a welcoming learning curve and vibrant communities.
 
 ---
 

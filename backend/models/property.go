@@ -1,13 +1,15 @@
 package models
 
-import(
+import (
 	"time"
 )
 
 type Property struct {
-	ID            uint			`gorm:"primaryKey"`
-	OwnerID		  uint			`gorm:"not null"`
-	streetAddress string		`gorm:"not null"`
-	Owner		User		`gorm:"foreignKey:OwnerID"`
-	financialRecords []financialRecord `gorm:"foreignKey:PropertyID"`
+	ID               uint              `gorm:"primaryKey" json:"id"`
+	OwnerID          uint              `gorm:"not null" json:"owner_id"`
+	streetAddress    string            `gorm:"not null" json:"street_address"`
+	Owner            User              `gorm:"foreignKey:OwnerID" json:"owner"`
+	financialRecords []FinancialRecord `gorm:"foreignKey:PropertyID" json:"financial_records"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
 }
