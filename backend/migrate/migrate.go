@@ -1,14 +1,13 @@
 package migrate
 
 import (
-	"github.com/ParadoxicalFlummox/TAPRE/backend/initializers"
-	"github.com/ParadoxicalFlummox/TAPRE/backend/models"
+	"TAPRE/backend/models"
+
+	"github.com/jinzhu/gorm"
 )
 
-// Run will run AutoMigrate for core models using the initializers DB.
-func Run() error {
-	if initializers.DB == nil {
-		return nil
-	}
-	return initializers.DB.AutoMigrate(&models.User{}, &models.Property{}, &models.FinancialRecord{})
+// RunMigrations applies the necessary migrations to the database.
+func RunMigrations(db *gorm.DB) error {
+	// Automatically create or update the database tables based on the models
+	return db.AutoMigrate(&models.User{}, &models.Property{}, &models.FinancialRecord{}).Error
 }

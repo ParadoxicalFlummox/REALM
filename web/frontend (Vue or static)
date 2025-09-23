@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Investment Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background: #35424a;
+            color: #ffffff;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+        .property-form {
+            background: #ffffff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .property-list {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .property-item {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Property Investment Tracker</h1>
+    </header>
+    <div class="container" id="app">
+        <div class="property-form">
+            <h2>Add Property</h2>
+            <form @submit.prevent="addProperty">
+                <input type="text" v-model="newProperty.name" placeholder="Property Name" required>
+                <input type="text" v-model="newProperty.location" placeholder="Location" required>
+                <input type="number" v-model="newProperty.value" placeholder="Value" required>
+                <button type="submit">Add Property</button>
+            </form>
+        </div>
+        <div class="property-list">
+            <h2>Properties</h2>
+            <div v-for="property in properties" :key="property.id" class="property-item">
+                <h3>{{ property.name }}</h3>
+                <p>Location: {{ property.location }}</p>
+                <p>Value: ${{ property.value }}</p>
+                <button @click="deleteProperty(property.id)">Delete</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                newProperty: {
+                    name: '',
+                    location: '',
+                    value: ''
+                },
+                properties: []
+            },
+            methods: {
+                fetchProperties() {
+                    axios.get('/api/v1/properties')
+                        .then(response => {
+                            this.properties = response.data;
+                        })
+                        .catch(error => {
+                            console.error("There was an error fetching the properties!", error);
+                        });
+                },
+                addProperty() {
+                    axios.post('/api/v1/properties', this.newProperty)
+                        .then(response => {
+                            this.properties.push(response.data);
+                            this.newProperty.name = '';
+                            this.newProperty.location = '';
+                            this.newProperty.value = '';
+                        })
+                        .catch(error => {
+                            console.error("There was an error adding the property!", error);
+                        });
+                },
+                deleteProperty(id) {
+                    axios.delete(`/api/v1/properties/${id}`)
+                        .then(() => {
+                            this.properties = this.properties.filter(property => property.id !== id);
+                        })
+                        .catch(error => {
+                            console.error("There was an error deleting the property!", error);
+                        });
+                }
+            },
+            mounted() {
+                this.fetchProperties();
+            }
+        });
+    </script>
+</body>
+</html>

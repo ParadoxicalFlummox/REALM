@@ -1,21 +1,20 @@
 package initializers
 
 import (
-	"os"
-
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+    "gorm.io/driver/postgres"
+    "gorm.io/gorm"
+    "log"
+    "os"
 )
 
 var DB *gorm.DB
 
-// ConnectToDB opens a gorm DB using the provided DSN. It returns the DB and any error.
-func ConnectToDB() (*gorm.DB, error) {
-	dsn := os.Getenv("DB_CREDS")
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return nil, err
-	}
-	DB = db
-	return db, nil
+func ConnectToDB() {
+    var err error
+    dsn := os.Getenv("DB_CREDS") // Database connection string from environment variable
+    DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        log.Fatalf("Could not connect to the database: %v", err)
+    }
+    log.Println("Database connection established")
 }

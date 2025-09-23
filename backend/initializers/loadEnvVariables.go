@@ -1,11 +1,21 @@
 package initializers
 
 import (
-	"github.com/joho/godotenv"
+    "log"
+    "os"
+
+    "github.com/joho/godotenv"
 )
 
-// LoadEnv loads environment variables from a file (optional).
-// It returns an error to the caller so the caller can decide how to handle it.
-func LoadEnv(path string) error {
-	return godotenv.Load(path)
+func LoadEnvVariables() {
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatalf("Error loading .env file")
+    }
+
+    // Example of accessing an environment variable
+    dbCreds := os.Getenv("DB_CREDS")
+    if dbCreds == "" {
+        log.Fatal("DB_CREDS environment variable is not set")
+    }
 }
