@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:18-alpine3.22
+    container_name: db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment: 
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./data/db_data:/var/lib/postgresql/data
+
+networks:
+  default:
+    name: tapre_service_network
