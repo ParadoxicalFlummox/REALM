@@ -15,7 +15,7 @@ engine = create_engine(DATABASE_URL, echo=True)
 
 # Initializer function that raches out to postgres and builds tables
 def init_db():
-    SQLModel.metadata.create_engine(engine)
+    SQLModel.metadata.create_all(engine)
 
 # Provides database session to api routes
 def get_session():
