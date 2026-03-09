@@ -10,12 +10,30 @@ TAPRE is a self-hosted, modular platform for small landlords to track property p
 
 ---
 
-## MVP Focus (The "Base" Project)
-The MVP is limited strictly to these three modules. **No integrations or AI features until these are finished.**
+## Development Roadmap
+The MVP is limited strictly to these phases. **No integrations or AI features until these are finished.**
 
-1.  **Properties Module:** Core entity management (Address, Purchase Price, SqFt).
-2.  **Ledger Module:** Financial tracking (Income, Expenses, Cash Flow).
-3.  **Asset Module:** Property inventory (Appliances, HVAC, Roof age).
+### Phase 1: Foundations & relational core
+- [x] Establish SQLModel Schema
+- [x] Create modular CRUD routers
+- [x] Build basic property financial summaries
+
+### Phase 2: Portfolio intelligence & reporting
+- [ ] Global dashboard route
+- [ ] Search & filter
+- [ ] Export engine
+
+### Phase 3: Frontend bridge
+- [ ] Vite + Vue setup
+- [ ] API consumption
+- [ ] Interactive dashboard
+
+## Post MVP Project Phases
+
+### Phase 4: Operational automation
+- [ ] Maintenance ledger
+- [ ] Reminder system
+- [ ] Document Association 
 
 ---
 
