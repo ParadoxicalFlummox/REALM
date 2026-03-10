@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from database import get_session
-from model import Transaction
+from models import Transaction
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -23,7 +23,7 @@ def update_transaction(transaction_id: int, transaction_data: Transaction, Sessi
     # fetch the transaction
     item = session.get(Transaction, transaction_id)
     if not item:
-        raise HTTPException(status_code=404, detail"Transaction not found")
+        raise HTTPException(status_code=404, detail="Transaction not found")
     # extract only the fields that the user is updating
     update_data = transaction_data.model_dump(exclude_unset=True)
     # apply the changes to the transaction
