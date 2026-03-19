@@ -6,15 +6,23 @@ from typing import Optional
 
 router = APIRouter(prefix="/dashboard")
 
+def validate_date_range(start: date, end: date):
+    if start > end:
+        raise HTTPException(
+            status_code=400,
+            detail="Error: Start date cannot be after end date. Time travel is not yet supported."
+        )
+
 @router.get("/insights/{property_id}")
 def get_property_insights(
     property_id: int,
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
+    start_date: date,
+    end_date: date,
     target_profit: Decimal = Decimal("200.00"),
-    num_tennants: int = 1,
+    num_tennants: int = Query(1, gt=0),
     session: Session = Depends(get_session)
 ):
+    validate_date_range(start_date, end_date)
     
     # Fetch the information about the current property
     prop = session.get(Property, property_id)

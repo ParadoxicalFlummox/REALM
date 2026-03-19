@@ -33,7 +33,7 @@ class DashboardService:
         return_on_income = float((net_cash_flow / investment) * 100) if investment > 0 else 0.0
 
         return {
-            "net_cash_flow": net_cash_flow
-            "operating_expense_ratio_percentage": round(operating_expense_ratio, 2)
+            "net_cash_flow": net_cash_flow,
+            "operating_expense_ratio_percentage": round(operating_expense_ratio, 2),
             "return_on_income_percentage": round(return_on_income, 2)
         }
