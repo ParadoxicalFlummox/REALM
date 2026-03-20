@@ -19,7 +19,7 @@ def read_transaction(offset: int = 0, limit: int = 50, session: Session = Depend
     return session.exec(select(Transaction).offset(offset).limit(limit)).all()
 
 @router.patch("/{transaction_id}") # UPDATE
-def update_transaction(transaction_id: int, transaction_data: Transaction, Session = Depends(get_session)):
+def update_transaction(transaction_id: int, transaction_data: Transaction, session: Session = Depends(get_session)):
     # fetch the transaction
     item = session.get(Transaction, transaction_id)
     if not item:
