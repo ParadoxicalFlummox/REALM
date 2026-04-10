@@ -19,9 +19,9 @@ The MVP is limited strictly to these phases. **No integrations or AI features un
 - [x] Build basic property financial summaries
 
 ### Phase 2: Portfolio intelligence & reporting
-- [ ] Global dashboard route
-- [ ] Search & filter
-- [ ] Export engine
+- [x] Global dashboard route
+- [x] Search & filter
+- [x] Export engine
 
 ### Phase 3: Frontend bridge
 - [ ] Vite + Vue setup
@@ -42,8 +42,8 @@ Following the host-admin convention:
 ```./app/tapre/
 ├── docker-compose.yml
 ├── backend/            # FastAPI Modular Logic
-│   └── modules/        # [properties, ledger, assets]
-├── frontend/           # Vue.js (Phase 2)
+│   └── modules/        # [properties, transactions, assets]
+├── frontend/           # Vue.js (Phase 3)
 ├── config/             # App & DB configs
 └── data/               # Persistent Postgres & Media volumes
 ```

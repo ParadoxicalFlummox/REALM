@@ -5,7 +5,7 @@ from sqlmodel import create_engine, Session, SQLModel
 
 # Load the .env from the root path
 BASE_DIR = Path(__file__).resolve().parent # this line looks at the current file and determines its parent directory
-load_dotenv(dotenv_path=BASE_DIR.parent / ".env") # it then uses that info to say okay this is where to look for the .env
+load_dotenv(dotenv_path=BASE_DIR.parent / ".env", override=True) # it then uses that info to say okay this is where to look for the .env
 
 # Get the connection string
 DATABASE_URL = os.getenv("DATABASE_URL")

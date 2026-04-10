@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from database import init_db, get_session
-from models import Property, Transaction, Asset
-from routes import properties, transactions, assets, dashboard
+from models import Property, Transaction, Asset, Deal
+from routes import properties, transactions, assets, dashboard, deals
 
 # Startup
 @asynccontextmanager
@@ -26,3 +26,4 @@ app.include_router(properties.router)
 app.include_router(transactions.router)
 app.include_router(assets.router)
 app.include_router(dashboard.router)
+app.include_router(deals.router)

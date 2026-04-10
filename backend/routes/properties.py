@@ -19,11 +19,18 @@ def read_properties(session: Session = Depends(get_session)):
     results = session.exec(statement) # execute the search
     return results.all() # convert and send the results to the user
 
+@router.get("/{property_id}")
+def read_property(property_id: int, session: Session = Depends(get_session)):
+    prop = session.get(Property, property_id)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    return prop
+
 @router.patch("/{property_id}")
 def update_property(property_id: int, property_data: Property, session: Session = Depends(get_session)):
     prop = session.get(Property, property_id)
     if not prop:
-        raise HTTPException(status_code=404, details="Property not found")
+        raise HTTPException(status_code=404, detail="Property not found")
     update_data = property_data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(prop, key, value)

@@ -31,6 +31,13 @@ def get_asset_categories():
         "other"         # Anything else
     ]
 
+@router.get("/{asset_id}")
+def read_asset(asset_id: int, session: Session = Depends(get_session)):
+    item = session.get(Asset, asset_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return item
+
 @router.patch("/{asset_id}")
 def update_asset(asset_id: int, asset_data: Asset, session: Session = Depends(get_session)):
     item = session.get(Asset, asset_id)

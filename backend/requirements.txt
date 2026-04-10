@@ -3,6 +3,7 @@ annotated-types==0.7.0
 anyio==4.12.1
 asarPy==1.0.1
 fastapi==0.135.1
+uvicorn==0.44.0
 greenlet==3.3.2
 idna==3.11
 psycopg2-binary==2.9.11

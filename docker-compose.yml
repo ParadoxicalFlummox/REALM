@@ -5,12 +5,15 @@ services:
     restart: unless-stopped
     ports:
       - "5432:5432"
-    environment: 
+    environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
     volumes:
-      - ./data/db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql
+
+volumes:
+  db_data:
 
 networks:
   default:
