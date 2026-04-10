@@ -94,4 +94,8 @@ class DealService:
             "cash_on_cash_return": q(cash_on_cash, "0.0001"),
             "dscr": q(dscr, "0.0001"),
             "break_even_occupancy": q(break_even, "0.0001"),
+            # Transparency fields — let the UI show the full derivation
+            "effective_rent": q(effective_rent),
+            "operating_expenses": q(operating_expenses),
+            "total_monthly_payment": q(operating_expenses + monthly_mortgage),
         }

@@ -22,6 +22,7 @@ class Property(SQLModel, table=True):
     # Stats
     square_footage: Optional[int] = None
     is_active: bool = Field(default=True)
+    estimated_value: Optional[Decimal] = Field(default=None, max_digits=12, decimal_places=2)
 
 # The transaction models, tracks expenses of a property
 class TransactionType(str, Enum):
@@ -109,3 +110,23 @@ class Deal(SQLModel, table=True):
     cash_on_cash_return: Decimal = Field(default=Decimal("0"), max_digits=7, decimal_places=4)  # %
     dscr: Decimal = Field(default=Decimal("0"), max_digits=7, decimal_places=4)
     break_even_occupancy: Decimal = Field(default=Decimal("0"), max_digits=7, decimal_places=4)  # %
+
+class Loan(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    property_id: int = Field(foreign_key="property.id")
+
+    # Labels
+    label: Optional[str] = None     # e.g. "Primary Mortgage", "HELOC"
+    lender: Optional[str] = None    # e.g. "Wells Fargo"
+
+    # Origination terms
+    original_balance: Decimal = Field(max_digits=12, decimal_places=2)
+    interest_rate: Decimal = Field(max_digits=12, decimal_places=3)     # annual %
+    loan_term_years: int = Field(default=30)
+    origination_date: date     # closing / first payment date
+
+    # Manual override (used instead of formula if set)
+    balance_override: Optional[Decimal] = Field(default=None, max_digits=12, decimal_places=2)
+    balance_override_date: Optional[date] = None # when override was recorded
+
+    is_active: bool = Field(default=True) # flag paid-off loans without deleting them

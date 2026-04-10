@@ -324,10 +324,11 @@ function fmtDscr(val) { return parseFloat(val).toFixed(2) }
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-              <!-- Mortgage -->
+              <!-- Total Monthly Payment (mortgage + all operating expenses) -->
               <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Monthly Mortgage</p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ fmt(results.monthly_mortgage) }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Monthly Payment</p>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ fmt(results.total_monthly_payment) }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ fmt(results.monthly_mortgage) }} mortgage + {{ fmt(results.operating_expenses) }} expenses</p>
               </div>
 
               <!-- Cash-on-cash -->
@@ -347,12 +348,50 @@ function fmtDscr(val) { return parseFloat(val).toFixed(2) }
               <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Break-Even Occupancy</p>
                 <p class="text-xl font-bold text-gray-900 dark:text-white">{{ fmtPct(results.break_even_occupancy) }}</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">min occupancy to cover costs</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">min occupancy to cover all costs</p>
               </div>
               <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Annual Property Tax</p>
                 <p class="text-xl font-bold text-gray-900 dark:text-white">{{ fmt(results.annual_property_tax) }}</p>
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">est. tax deduction (consult CPA)</p>
+              </div>
+            </div>
+
+            <!-- How the numbers work — cash flow derivation for trust/verification -->
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+              <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">How the numbers work</h3>
+              <div class="space-y-1.5 text-sm">
+                <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                  <span>Gross Rent</span>
+                  <span class="font-medium">{{ fmt(form.monthly_rent) }}</span>
+                </div>
+                <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                  <span>Vacancy ({{ form.vacancy_rate }}%)</span>
+                  <span>− {{ fmt(parseFloat(form.monthly_rent) * parseFloat(form.vacancy_rate) / 100) }}</span>
+                </div>
+                <div class="flex justify-between text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                  <span>Effective Rent</span>
+                  <span class="font-medium">{{ fmt(results.effective_rent) }}</span>
+                </div>
+                <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                  <span>Operating Expenses</span>
+                  <span>− {{ fmt(results.operating_expenses) }}</span>
+                </div>
+                <div class="flex justify-between text-gray-700 dark:text-gray-300 font-medium border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                  <span>NOI</span>
+                  <span>{{ fmt(results.monthly_noi) }}</span>
+                </div>
+                <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                  <span>Mortgage (P+I)</span>
+                  <span>− {{ fmt(results.monthly_mortgage) }}</span>
+                </div>
+                <div
+                  class="flex justify-between font-bold border-t border-gray-200 dark:border-gray-600 pt-1.5"
+                  :class="parseFloat(results.monthly_cash_flow) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                >
+                  <span>Cash Flow</span>
+                  <span>{{ fmt(results.monthly_cash_flow) }}</span>
+                </div>
               </div>
             </div>
           </div>

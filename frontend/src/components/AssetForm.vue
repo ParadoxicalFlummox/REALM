@@ -1,9 +1,10 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
-import { createAsset, getAssetCategories } from '../api/assets'
+import { createAsset, updateAsset, getAssetCategories } from '../api/assets'
 
 const props = defineProps({
   propertyId: { type: Number, required: true },
+  item: { type: Object, default: null },  // if provided, form is in edit mode
 })
 
 const emit = defineEmits(['saved'])
@@ -23,6 +24,14 @@ const saving = ref(false)
 
 onMounted(async () => {
   categories.value = await getAssetCategories()
+  if (props.item) {
+    form.name = props.item.name ?? ''
+    form.category = props.item.category ?? ''
+    form.description = props.item.description ?? ''
+    form.purchase_price = props.item.purchase_price ?? ''
+    form.purchase_date = props.item.purchase_date ?? ''
+    form.serial_number = props.item.serial_number ?? ''
+  }
 })
 
 async function submit() {
@@ -33,7 +42,7 @@ async function submit() {
   saving.value = true
   error.value = null
   try {
-    const created = await createAsset({
+    const payload = {
       name: form.name,
       category: form.category || null,
       description: form.description || null,
@@ -41,8 +50,11 @@ async function submit() {
       purchase_date: form.purchase_date || null,
       serial_number: form.serial_number || null,
       property_id: props.propertyId,
-    })
-    emit('saved', created)
+    }
+    const result = props.item
+      ? await updateAsset(props.item.id, payload)
+      : await createAsset(payload)
+    emit('saved', result)
   } catch (e) {
     error.value = e.response?.data?.detail || 'Failed to save asset.'
   } finally {
@@ -53,7 +65,9 @@ async function submit() {
 
 <template>
   <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
-    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">New Asset</h3>
+    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">
+      {{ item ? 'Edit Asset' : 'New Asset' }}
+    </h3>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div>
@@ -103,7 +117,7 @@ async function submit() {
       :disabled="saving"
       class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded disabled:opacity-50 transition-colors"
     >
-      {{ saving ? 'Saving...' : 'Save Asset' }}
+      {{ saving ? 'Saving...' : item ? 'Update Asset' : 'Save Asset' }}
     </button>
   </div>
 </template>

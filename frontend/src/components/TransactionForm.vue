@@ -1,9 +1,10 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
-import { createTransaction, getTaxCategories } from '../api/transactions'
+import { createTransaction, updateTransaction, getTaxCategories } from '../api/transactions'
 
 const props = defineProps({
   propertyId: { type: Number, required: true },
+  item: { type: Object, default: null },  // if provided, form is in edit mode
 })
 
 const emit = defineEmits(['saved'])
@@ -23,6 +24,14 @@ const saving = ref(false)
 
 onMounted(async () => {
   taxCategories.value = await getTaxCategories()
+  if (props.item) {
+    form.amount = props.item.amount ?? ''
+    form.category = props.item.category ?? ''
+    form.tax_category = props.item.tax_category ?? ''
+    form.transaction_type = props.item.transaction_type ?? 'expense'
+    form.transaction_date = props.item.transaction_date ?? new Date().toISOString().split('T')[0]
+    form.description = props.item.description ?? ''
+  }
 })
 
 async function submit() {
@@ -33,7 +42,7 @@ async function submit() {
   saving.value = true
   error.value = null
   try {
-    const created = await createTransaction({
+    const payload = {
       amount: form.amount,
       category: form.category,
       tax_category: form.tax_category || null,
@@ -41,8 +50,11 @@ async function submit() {
       transaction_date: form.transaction_date,
       description: form.description || null,
       property_id: props.propertyId,
-    })
-    emit('saved', created)
+    }
+    const result = props.item
+      ? await updateTransaction(props.item.id, payload)
+      : await createTransaction(payload)
+    emit('saved', result)
   } catch (e) {
     error.value = e.response?.data?.detail || 'Failed to save transaction.'
   } finally {
@@ -53,7 +65,9 @@ async function submit() {
 
 <template>
   <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
-    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">New Transaction</h3>
+    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">
+      {{ item ? 'Edit Transaction' : 'New Transaction' }}
+    </h3>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div>
@@ -111,7 +125,7 @@ async function submit() {
       :disabled="saving"
       class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded disabled:opacity-50 transition-colors"
     >
-      {{ saving ? 'Saving...' : 'Save Transaction' }}
+      {{ saving ? 'Saving...' : item ? 'Update Transaction' : 'Save Transaction' }}
     </button>
   </div>
 </template>

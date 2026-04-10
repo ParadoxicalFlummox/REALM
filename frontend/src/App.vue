@@ -25,7 +25,7 @@ if (isDark.value) document.documentElement.classList.add('dark')
         {{ companyName }}
       </RouterLink>
       <RouterLink
-        to="/"
+        to="/properties"
         class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         active-class="text-gray-900 dark:text-white font-medium"
       >
