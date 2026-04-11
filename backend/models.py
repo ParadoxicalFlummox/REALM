@@ -111,6 +111,66 @@ class Deal(SQLModel, table=True):
     dscr: Decimal = Field(default=Decimal("0"), max_digits=7, decimal_places=4)
     break_even_occupancy: Decimal = Field(default=Decimal("0"), max_digits=7, decimal_places=4)  # %
 
+# Maintenance record — tracks work done on a property or specific asset
+MAINTENANCE_CATEGORIES = [
+    "repair",
+    "inspection",
+    "cleaning",
+    "landscaping",
+    "hvac",
+    "plumbing",
+    "electrical",
+    "appliance",
+    "pest_control",
+    "capital_improvement",
+    "other",
+]
+
+class MaintenanceRecord(SQLModel, table=True):
+    __tablename__ = "maintenancerecord"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    property_id: int = Field(foreign_key="property.id")
+    asset_id: Optional[int] = Field(default=None, foreign_key="asset.id")  # optional link to a specific asset
+
+    service_date: date = Field(default_factory=date.today)
+    category: str = Field(index=True)
+    description: str                        # what was done
+    vendor: Optional[str] = None            # who did the work
+    cost: Decimal = Field(default=Decimal("0"), max_digits=12, decimal_places=2)
+    warranty_expires: Optional[date] = None # optional warranty expiration
+    notes: Optional[str] = None
+
+
+# --- Foundation models (schema only — UI in a future release) ---
+
+# Reminder — scheduled alerts for lease renewals, inspections, filter changes, etc.
+class Reminder(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    property_id: int = Field(foreign_key="property.id")
+    asset_id: Optional[int] = Field(default=None, foreign_key="asset.id")
+    maintenance_record_id: Optional[int] = Field(default=None, foreign_key="maintenancerecord.id")
+
+    title: str
+    due_date: date
+    notes: Optional[str] = None
+    is_complete: bool = Field(default=False)
+
+
+# Document — file metadata for lease agreements, warranties, inspection reports, etc.
+# Actual file storage is out of scope for v1.0 (filesystem or S3 in a future release)
+class Document(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    property_id: int = Field(foreign_key="property.id")
+    asset_id: Optional[int] = Field(default=None, foreign_key="asset.id")
+    maintenance_record_id: Optional[int] = Field(default=None, foreign_key="maintenancerecord.id")
+
+    name: str                               # display name, e.g. "Lease Agreement 2025"
+    document_type: Optional[str] = None     # lease, warranty, inspection, insurance, other
+    file_path: Optional[str] = None         # future: path or S3 key
+    uploaded_at: date = Field(default_factory=date.today)
+    notes: Optional[str] = None
+
+
 class Loan(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     property_id: int = Field(foreign_key="property.id")

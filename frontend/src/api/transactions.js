@@ -15,5 +15,8 @@ export const updateTransaction = (id, data) =>
 export const deleteTransaction = (id) =>
   client.delete(`/transactions/${id}`).then(r => r.data)
 
+export const getTransactionCategories = () =>
+  client.get('/transactions/categories').then(r => r.data)
+
 export const getTaxCategories = () =>
   client.get('/transactions/tax-categories').then(r => r.data)

@@ -7,6 +7,37 @@ router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 # CRUD operations for transactions
 
+TRANSACTION_CATEGORIES = {
+    "income": [
+        "rent",
+        "late_fee",
+        "pet_fee",
+        "parking",
+        "laundry",
+        "security_deposit",
+        "other_income",
+    ],
+    "expense": [
+        "mortgage",
+        "property_tax",
+        "insurance",
+        "hoa",
+        "repairs",
+        "capital_expenditure",
+        "utilities",
+        "lawn_snow",
+        "property_management",
+        "advertising",
+        "legal_professional",
+        "supplies",
+        "other_expense",
+    ],
+}
+
+@router.get("/categories")
+def get_transaction_categories():
+    return TRANSACTION_CATEGORIES
+
 @router.get("/tax-categories")
 def get_tax_categories():
     return SCHEDULE_E_CATEGORIES

@@ -1,10 +1,10 @@
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
-import { createTransaction, updateTransaction, getTaxCategories } from '../api/transactions'
+import { reactive, ref, computed, onMounted, watch } from 'vue'
+import { createTransaction, updateTransaction, getTransactionCategories, getTaxCategories } from '../api/transactions'
 
 const props = defineProps({
   propertyId: { type: Number, required: true },
-  item: { type: Object, default: null },  // if provided, form is in edit mode
+  item: { type: Object, default: null },
 })
 
 const emit = defineEmits(['saved'])
@@ -18,12 +18,35 @@ const form = reactive({
   description: '',
 })
 
+const allCategories = ref({ income: [], expense: [] })
 const taxCategories = ref([])
 const error = ref(null)
 const saving = ref(false)
 
+// Filter categories by current transaction type
+const categories = computed(() =>
+  allCategories.value[form.transaction_type] || []
+)
+
+// Reset category when type changes if it no longer belongs to the new type
+watch(() => form.transaction_type, () => {
+  if (!categories.value.includes(form.category)) {
+    form.category = ''
+  }
+})
+
+function formatLabel(val) {
+  return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
 onMounted(async () => {
-  taxCategories.value = await getTaxCategories()
+  const [cats, taxCats] = await Promise.all([
+    getTransactionCategories(),
+    getTaxCategories(),
+  ])
+  allCategories.value = cats
+  taxCategories.value = taxCats
+
   if (props.item) {
     form.amount = props.item.amount ?? ''
     form.category = props.item.category ?? ''
@@ -77,12 +100,6 @@ async function submit() {
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Category *</label>
-        <input v-model="form.category" type="text" placeholder="e.g. rent, maintenance"
-          class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-
-      <div>
         <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Type</label>
         <select v-model="form.transaction_type"
           class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -92,12 +109,20 @@ async function submit() {
       </div>
 
       <div>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Category *</label>
+        <select v-model="form.category"
+          class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">— select —</option>
+          <option v-for="cat in categories" :key="cat" :value="cat">{{ formatLabel(cat) }}</option>
+        </select>
+      </div>
+
+      <div>
         <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Date</label>
         <input v-model="form.transaction_date" type="date"
           class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
       </div>
 
-      <!-- Schedule E tax category — optional, for annual tax reporting -->
       <div class="sm:col-span-2">
         <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
           Tax Category <span class="text-gray-400 font-normal">(Schedule E — optional)</span>
@@ -106,7 +131,7 @@ async function submit() {
           class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">— not categorized —</option>
           <option v-for="cat in taxCategories" :key="cat" :value="cat">
-            {{ cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) }}
+            {{ formatLabel(cat) }}
           </option>
         </select>
       </div>

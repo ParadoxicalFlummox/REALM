@@ -126,6 +126,11 @@ async function handleDelete(id) {
   }
 }
 
+const expandedDealId = ref(null)
+function toggleDeal(id) {
+  expandedDealId.value = expandedDealId.value === id ? null : id
+}
+
 const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 function fmt(val) { return currency.format(parseFloat(val)) }
 function fmtPct(val) { return parseFloat(val).toFixed(2) + '%' }
@@ -441,38 +446,178 @@ function fmtDscr(val) { return parseFloat(val).toFixed(2) }
         <div
           v-for="deal in savedDeals"
           :key="deal.id"
-          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 flex items-center justify-between gap-4"
+          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
         >
-          <div class="min-w-0">
-            <p class="font-medium text-gray-900 dark:text-white truncate">
-              {{ deal.name || deal.address }}
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ deal.created_at }}</p>
-          </div>
-          <div class="flex items-center gap-6 shrink-0 text-sm">
-            <div class="text-center">
-              <p class="text-xs text-gray-400 dark:text-gray-500">Cash Flow</p>
-              <p
-                class="font-semibold"
-                :class="parseFloat(deal.monthly_cash_flow) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+          <!-- Summary row — click to expand -->
+          <div
+            class="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            @click="toggleDeal(deal.id)"
+          >
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="font-medium text-gray-900 dark:text-white truncate">
+                  {{ deal.name || deal.address }}
+                </p>
+                <span class="text-xs text-gray-400 dark:text-gray-500">
+                  {{ expandedDealId === deal.id ? '▲' : '▼' }}
+                </span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ deal.created_at }}</p>
+            </div>
+            <div class="flex items-center gap-6 shrink-0 text-sm">
+              <div class="text-center">
+                <p class="text-xs text-gray-400 dark:text-gray-500">Cash Flow</p>
+                <p class="font-semibold" :class="parseFloat(deal.monthly_cash_flow) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                  {{ fmt(deal.monthly_cash_flow) }}/mo
+                </p>
+              </div>
+              <div class="text-center">
+                <p class="text-xs text-gray-400 dark:text-gray-500">NOI</p>
+                <p class="font-semibold text-gray-900 dark:text-white">{{ fmt(deal.monthly_noi) }}/mo</p>
+              </div>
+              <div class="text-center">
+                <p class="text-xs text-gray-400 dark:text-gray-500">DSCR</p>
+                <p
+                  class="font-semibold"
+                  :class="parseFloat(deal.dscr) >= 1.25 ? 'text-green-600 dark:text-green-400' : parseFloat(deal.dscr) >= 1.0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'"
+                >
+                  {{ fmtDscr(deal.dscr) }}
+                </p>
+              </div>
+              <button
+                @click.stop="handleDelete(deal.id)"
+                class="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
               >
-                {{ fmt(deal.monthly_cash_flow) }}/mo
-              </p>
+                Delete
+              </button>
             </div>
-            <div class="text-center">
-              <p class="text-xs text-gray-400 dark:text-gray-500">NOI</p>
-              <p class="font-semibold text-gray-900 dark:text-white">{{ fmt(deal.monthly_noi) }}/mo</p>
+          </div>
+
+          <!-- Expanded detail panel -->
+          <div v-if="expandedDealId === deal.id" class="border-t border-gray-100 dark:border-gray-700 px-5 pb-5 pt-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+              <!-- Inputs -->
+              <div>
+                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Inputs</h3>
+                <div class="space-y-1.5 text-sm">
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Address</span>
+                    <span class="font-medium text-right max-w-48 truncate">{{ deal.address }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Purchase Price</span>
+                    <span class="font-medium">{{ fmt(deal.purchase_price) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Down Payment</span>
+                    <span class="font-medium">{{ fmt(deal.down_payment) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Closing Costs</span>
+                    <span class="font-medium">{{ fmt(deal.closing_costs) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Rehab Cost</span>
+                    <span class="font-medium">{{ fmt(deal.rehab_cost) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700 pt-1.5 mt-1.5">
+                    <span class="text-gray-500 dark:text-gray-400">Interest Rate</span>
+                    <span class="font-medium">{{ parseFloat(deal.interest_rate).toFixed(3) }}%</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Loan Term</span>
+                    <span class="font-medium">{{ deal.loan_term_years }} years</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700 pt-1.5 mt-1.5">
+                    <span class="text-gray-500 dark:text-gray-400">Monthly Rent</span>
+                    <span class="font-medium">{{ fmt(deal.monthly_rent) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Vacancy Rate</span>
+                    <span class="font-medium">{{ parseFloat(deal.vacancy_rate).toFixed(1) }}%</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Property Tax</span>
+                    <span class="font-medium">{{ fmt(deal.monthly_property_tax) }}/mo</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Insurance</span>
+                    <span class="font-medium">{{ fmt(deal.insurance) }}/mo</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">HOA</span>
+                    <span class="font-medium">{{ fmt(deal.hoa) }}/mo</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Maintenance</span>
+                    <span class="font-medium">{{ fmt(deal.maintenance) }}/mo</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">CapEx</span>
+                    <span class="font-medium">{{ fmt(deal.capex) }}/mo</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Utilities</span>
+                    <span class="font-medium">{{ fmt(deal.utilities) }}/mo</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-500 dark:text-gray-400">Lawn / Snow</span>
+                    <span class="font-medium">{{ fmt(deal.lawn_snow) }}/mo</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cash flow derivation -->
+              <div>
+                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">How the numbers work</h3>
+                <div class="space-y-1.5 text-sm">
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Gross Rent</span>
+                    <span class="font-medium">{{ fmt(deal.monthly_rent) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                    <span>Vacancy ({{ parseFloat(deal.vacancy_rate).toFixed(1) }}%)</span>
+                    <span>− {{ fmt(parseFloat(deal.monthly_rent) * parseFloat(deal.vacancy_rate) / 100) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                    <span>Effective Rent</span>
+                    <span class="font-medium">{{ fmt(parseFloat(deal.monthly_rent) * (1 - parseFloat(deal.vacancy_rate) / 100)) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                    <span>Operating Expenses</span>
+                    <span>− {{ fmt(parseFloat(deal.monthly_property_tax) + parseFloat(deal.insurance) + parseFloat(deal.hoa) + parseFloat(deal.maintenance) + parseFloat(deal.capex) + parseFloat(deal.utilities) + parseFloat(deal.lawn_snow)) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-700 dark:text-gray-300 font-medium border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                    <span>NOI</span>
+                    <span>{{ fmt(deal.monthly_noi) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                    <span>Mortgage (P+I)</span>
+                    <span>− {{ fmt(deal.monthly_mortgage) }}</span>
+                  </div>
+                  <div
+                    class="flex justify-between font-bold border-t border-gray-200 dark:border-gray-600 pt-1.5"
+                    :class="parseFloat(deal.monthly_cash_flow) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                  >
+                    <span>Cash Flow</span>
+                    <span>{{ fmt(deal.monthly_cash_flow) }}/mo</span>
+                  </div>
+                  <div class="flex justify-between text-gray-400 dark:text-gray-500 pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
+                    <span>Cash-on-Cash</span>
+                    <span class="font-medium">{{ fmtPct(deal.cash_on_cash_return) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                    <span>Break-Even Occupancy</span>
+                    <span class="font-medium">{{ fmtPct(deal.break_even_occupancy) }}</span>
+                  </div>
+                  <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                    <span>Annual Property Tax</span>
+                    <span class="font-medium">{{ fmt(deal.annual_property_tax) }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="text-center">
-              <p class="text-xs text-gray-400 dark:text-gray-500">DSCR</p>
-              <p class="font-semibold text-gray-900 dark:text-white">{{ fmtDscr(deal.dscr) }}</p>
-            </div>
-            <button
-              @click="handleDelete(deal.id)"
-              class="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-            >
-              Delete
-            </button>
           </div>
         </div>
       </div>

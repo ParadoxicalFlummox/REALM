@@ -7,6 +7,7 @@ import { getAssets, deleteAsset } from '../api/assets'
 import { getDeals, deleteDeal } from '../api/deals'
 import { getEquity, createLoan, updateLoan, deleteLoan } from '../api/loans'
 import { updateProperty } from '../api/properties'
+import { getMaintenanceRecords, createMaintenanceRecord, updateMaintenanceRecord, deleteMaintenanceRecord, getMaintenanceCategories } from '../api/maintenance'
 import TransactionForm from '../components/TransactionForm.vue'
 import AssetForm from '../components/AssetForm.vue'
 
@@ -27,7 +28,23 @@ const showLoanForm = ref(false)
 const editingTransactionId = ref(null)
 const editingAssetId = ref(null)
 const editingLoanId = ref(null)
+const expandedDealId = ref(null)
 const editLoanForm = ref({})
+
+const maintenanceRecords = ref([])
+const maintenanceCategories = ref([])
+const showMaintenanceForm = ref(false)
+const editingMaintenanceId = ref(null)
+const newMaintenance = ref({
+  service_date: new Date().toISOString().split('T')[0],
+  category: '',
+  description: '',
+  vendor: '',
+  cost: '',
+  asset_id: '',
+  warranty_expires: '',
+  notes: '',
+})
 
 const editingTransaction = computed(() =>
   editingTransactionId.value ? allTransactions.value.find(t => t.id === editingTransactionId.value) : null
@@ -58,18 +75,22 @@ const assets = computed(() =>
 
 onMounted(async () => {
   try {
-    const [prop, txns, assts, dealList, equityData] = await Promise.all([
+    const [prop, txns, assts, dealList, equityData, maintRecords, maintCats] = await Promise.all([
       getProperty(propertyId),
       getTransactions(0, 200),
       getAssets(0, 200),
       getDeals(propertyId),
       getEquity(propertyId),
+      getMaintenanceRecords(propertyId),
+      getMaintenanceCategories(),
     ])
     property.value = prop
     allTransactions.value = txns
     allAssets.value = assts
     deals.value = dealList
     equity.value = equityData
+    maintenanceRecords.value = maintRecords
+    maintenanceCategories.value = maintCats
     estimatedValueInput.value = prop.estimated_value ? String(prop.estimated_value) : ''
   } catch (e) {
     error.value = 'Failed to load property data.'
@@ -214,6 +235,69 @@ function ltvColor(ltv) {
   return 'text-red-600 dark:text-red-400'
 }
 
+async function submitMaintenance() {
+  if (!newMaintenance.value.description || !newMaintenance.value.category || !newMaintenance.value.service_date) return
+  try {
+    const payload = {
+      property_id: propertyId,
+      asset_id: newMaintenance.value.asset_id || null,
+      service_date: newMaintenance.value.service_date,
+      category: newMaintenance.value.category,
+      description: newMaintenance.value.description,
+      vendor: newMaintenance.value.vendor || null,
+      cost: newMaintenance.value.cost || '0',
+      warranty_expires: newMaintenance.value.warranty_expires || null,
+      notes: newMaintenance.value.notes || null,
+    }
+    if (editingMaintenanceId.value) {
+      const updated = await updateMaintenanceRecord(editingMaintenanceId.value, payload)
+      const idx = maintenanceRecords.value.findIndex(r => r.id === updated.id)
+      if (idx !== -1) maintenanceRecords.value[idx] = updated
+      editingMaintenanceId.value = null
+    } else {
+      const created = await createMaintenanceRecord(payload)
+      maintenanceRecords.value.unshift(created)
+      showMaintenanceForm.value = false
+    }
+    newMaintenance.value = { service_date: new Date().toISOString().split('T')[0], category: '', description: '', vendor: '', cost: '', asset_id: '', warranty_expires: '', notes: '' }
+  } catch (e) {
+    alert(e.response?.data?.detail || 'Failed to save maintenance record.')
+  }
+}
+
+function startEditMaintenance(record) {
+  editingMaintenanceId.value = record.id
+  newMaintenance.value = {
+    service_date: record.service_date,
+    category: record.category,
+    description: record.description,
+    vendor: record.vendor ?? '',
+    cost: record.cost,
+    asset_id: record.asset_id ?? '',
+    warranty_expires: record.warranty_expires ?? '',
+    notes: record.notes ?? '',
+  }
+  showMaintenanceForm.value = true
+}
+
+async function handleDeleteMaintenance(id) {
+  if (!confirm('Delete this maintenance record?')) return
+  try {
+    await deleteMaintenanceRecord(id)
+    maintenanceRecords.value = maintenanceRecords.value.filter(r => r.id !== id)
+    if (editingMaintenanceId.value === id) {
+      editingMaintenanceId.value = null
+      showMaintenanceForm.value = false
+    }
+  } catch (e) {
+    alert('Failed to delete maintenance record.')
+  }
+}
+
+function formatLabel(val) {
+  return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
 function formatCurrency(val) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(val))
 }
@@ -301,6 +385,15 @@ function formatCurrency(val) {
           class="px-4 py-2 text-sm font-medium transition-colors"
         >
           Equity ({{ equity?.loans?.length ?? 0 }})
+        </button>
+        <button
+          @click="activeTab = 'maintenance'"
+          :class="activeTab === 'maintenance'
+            ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+          class="px-4 py-2 text-sm font-medium transition-colors"
+        >
+          Maintenance ({{ maintenanceRecords.length }})
         </button>
       </div>
 
@@ -471,38 +564,170 @@ function formatCurrency(val) {
           <div
             v-for="deal in deals"
             :key="deal.id"
-            class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 flex items-center justify-between gap-4"
+            class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
           >
-            <div class="min-w-0">
-              <p class="font-medium text-gray-900 dark:text-white truncate">
-                {{ deal.name || deal.address }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ deal.created_at }}</p>
-            </div>
-            <div class="flex items-center gap-6 shrink-0 text-sm">
-              <div class="text-center">
-                <p class="text-xs text-gray-400 dark:text-gray-500">Cash Flow</p>
-                <p
-                  class="font-semibold"
-                  :class="parseFloat(deal.monthly_cash_flow) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+            <!-- Summary row -->
+            <div
+              class="p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              @click="expandedDealId = expandedDealId === deal.id ? null : deal.id"
+            >
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="font-medium text-gray-900 dark:text-white truncate">
+                    {{ deal.name || deal.address }}
+                  </p>
+                  <span class="text-xs text-gray-400 dark:text-gray-500">
+                    {{ expandedDealId === deal.id ? '▲' : '▼' }}
+                  </span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ deal.created_at }}</p>
+              </div>
+              <div class="flex items-center gap-6 shrink-0 text-sm">
+                <div class="text-center">
+                  <p class="text-xs text-gray-400 dark:text-gray-500">Cash Flow</p>
+                  <p class="font-semibold" :class="parseFloat(deal.monthly_cash_flow) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                    {{ formatCurrency(deal.monthly_cash_flow) }}/mo
+                  </p>
+                </div>
+                <div class="text-center">
+                  <p class="text-xs text-gray-400 dark:text-gray-500">NOI</p>
+                  <p class="font-semibold text-gray-900 dark:text-white">{{ formatCurrency(deal.monthly_noi) }}/mo</p>
+                </div>
+                <div class="text-center">
+                  <p class="text-xs text-gray-400 dark:text-gray-500">DSCR</p>
+                  <p class="font-semibold" :class="parseFloat(deal.dscr) >= 1.25 ? 'text-green-600 dark:text-green-400' : parseFloat(deal.dscr) >= 1.0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'">
+                    {{ parseFloat(deal.dscr).toFixed(2) }}
+                  </p>
+                </div>
+                <button
+                  @click.stop="handleDeleteDeal(deal.id)"
+                  class="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                 >
-                  {{ formatCurrency(deal.monthly_cash_flow) }}/mo
-                </p>
+                  Delete
+                </button>
               </div>
-              <div class="text-center">
-                <p class="text-xs text-gray-400 dark:text-gray-500">NOI</p>
-                <p class="font-semibold text-gray-900 dark:text-white">{{ formatCurrency(deal.monthly_noi) }}/mo</p>
+            </div>
+
+            <!-- Expanded detail panel -->
+            <div v-if="expandedDealId === deal.id" class="border-t border-gray-100 dark:border-gray-700 px-5 pb-5 pt-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Inputs -->
+                <div>
+                  <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Inputs</h3>
+                  <div class="space-y-1.5 text-sm">
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Purchase Price</span>
+                      <span class="font-medium">{{ formatCurrency(deal.purchase_price) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Down Payment</span>
+                      <span class="font-medium">{{ formatCurrency(deal.down_payment) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Closing Costs</span>
+                      <span class="font-medium">{{ formatCurrency(deal.closing_costs) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Rehab Cost</span>
+                      <span class="font-medium">{{ formatCurrency(deal.rehab_cost) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700 pt-1.5 mt-1.5">
+                      <span class="text-gray-500 dark:text-gray-400">Interest Rate</span>
+                      <span class="font-medium">{{ parseFloat(deal.interest_rate).toFixed(3) }}%</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Loan Term</span>
+                      <span class="font-medium">{{ deal.loan_term_years }} years</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700 pt-1.5 mt-1.5">
+                      <span class="text-gray-500 dark:text-gray-400">Monthly Rent</span>
+                      <span class="font-medium">{{ formatCurrency(deal.monthly_rent) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Vacancy Rate</span>
+                      <span class="font-medium">{{ parseFloat(deal.vacancy_rate).toFixed(1) }}%</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Property Tax</span>
+                      <span class="font-medium">{{ formatCurrency(deal.monthly_property_tax) }}/mo</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Insurance</span>
+                      <span class="font-medium">{{ formatCurrency(deal.insurance) }}/mo</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">HOA</span>
+                      <span class="font-medium">{{ formatCurrency(deal.hoa) }}/mo</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Maintenance</span>
+                      <span class="font-medium">{{ formatCurrency(deal.maintenance) }}/mo</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">CapEx</span>
+                      <span class="font-medium">{{ formatCurrency(deal.capex) }}/mo</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Utilities</span>
+                      <span class="font-medium">{{ formatCurrency(deal.utilities) }}/mo</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">Lawn / Snow</span>
+                      <span class="font-medium">{{ formatCurrency(deal.lawn_snow) }}/mo</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cash flow derivation -->
+                <div>
+                  <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">How the numbers work</h3>
+                  <div class="space-y-1.5 text-sm">
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span>Gross Rent</span>
+                      <span class="font-medium">{{ formatCurrency(deal.monthly_rent) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                      <span>Vacancy ({{ parseFloat(deal.vacancy_rate).toFixed(1) }}%)</span>
+                      <span>− {{ formatCurrency(parseFloat(deal.monthly_rent) * parseFloat(deal.vacancy_rate) / 100) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                      <span>Effective Rent</span>
+                      <span class="font-medium">{{ formatCurrency(parseFloat(deal.monthly_rent) * (1 - parseFloat(deal.vacancy_rate) / 100)) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                      <span>Operating Expenses</span>
+                      <span>− {{ formatCurrency(parseFloat(deal.monthly_property_tax) + parseFloat(deal.insurance) + parseFloat(deal.hoa) + parseFloat(deal.maintenance) + parseFloat(deal.capex) + parseFloat(deal.utilities) + parseFloat(deal.lawn_snow)) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700 dark:text-gray-300 font-medium border-t border-gray-100 dark:border-gray-700 pt-1.5">
+                      <span>NOI</span>
+                      <span>{{ formatCurrency(deal.monthly_noi) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                      <span>Mortgage (P+I)</span>
+                      <span>− {{ formatCurrency(deal.monthly_mortgage) }}</span>
+                    </div>
+                    <div
+                      class="flex justify-between font-bold border-t border-gray-200 dark:border-gray-600 pt-1.5"
+                      :class="parseFloat(deal.monthly_cash_flow) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                    >
+                      <span>Cash Flow</span>
+                      <span>{{ formatCurrency(deal.monthly_cash_flow) }}/mo</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400 dark:text-gray-500 pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
+                      <span>Cash-on-Cash</span>
+                      <span class="font-medium">{{ parseFloat(deal.cash_on_cash_return).toFixed(2) }}%</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                      <span>Break-Even Occupancy</span>
+                      <span class="font-medium">{{ parseFloat(deal.break_even_occupancy).toFixed(2) }}%</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400 dark:text-gray-500">
+                      <span>Annual Property Tax</span>
+                      <span class="font-medium">{{ formatCurrency(deal.annual_property_tax) }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="text-center">
-                <p class="text-xs text-gray-400 dark:text-gray-500">DSCR</p>
-                <p class="font-semibold text-gray-900 dark:text-white">{{ parseFloat(deal.dscr).toFixed(2) }}</p>
-              </div>
-              <button
-                @click="handleDeleteDeal(deal.id)"
-                class="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-              >
-                Delete
-              </button>
             </div>
           </div>
         </div>
@@ -728,6 +953,135 @@ function formatCurrency(val) {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Maintenance Tab -->
+      <div v-if="activeTab === 'maintenance'">
+        <div class="flex justify-end mb-4">
+          <button
+            @click="showMaintenanceForm = !showMaintenanceForm; editingMaintenanceId = null; newMaintenance = { service_date: new Date().toISOString().split('T')[0], category: '', description: '', vendor: '', cost: '', asset_id: '', warranty_expires: '', notes: '' }"
+            class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+          >
+            {{ showMaintenanceForm && !editingMaintenanceId ? 'Cancel' : '+ Log Work' }}
+          </button>
+        </div>
+
+        <!-- Add / Edit form -->
+        <div v-if="showMaintenanceForm" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 mb-4">
+          <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+            {{ editingMaintenanceId ? 'Edit Record' : 'Log Maintenance' }}
+          </h2>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Date *</label>
+              <input v-model="newMaintenance.service_date" type="date"
+                class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Category *</label>
+              <select v-model="newMaintenance.category"
+                class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">— select —</option>
+                <option v-for="cat in maintenanceCategories" :key="cat" :value="cat">{{ formatLabel(cat) }}</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Description *</label>
+              <input v-model="newMaintenance.description" type="text" placeholder="What was done"
+                class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Vendor</label>
+              <input v-model="newMaintenance.vendor" type="text" placeholder="e.g. ABC Plumbing"
+                class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cost</label>
+              <input v-model="newMaintenance.cost" type="number" step="0.01" placeholder="0.00"
+                class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Linked Asset <span class="text-gray-400 font-normal">(optional)</span></label>
+              <select v-model="newMaintenance.asset_id"
+                class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">— no specific asset —</option>
+                <option v-for="a in assets" :key="a.id" :value="a.id">{{ a.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Warranty Expires <span class="text-gray-400 font-normal">(optional)</span></label>
+              <input v-model="newMaintenance.warranty_expires" type="date"
+                class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Notes</label>
+              <input v-model="newMaintenance.notes" type="text" placeholder="Optional notes"
+                class="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </div>
+          <button
+            @click="submitMaintenance"
+            class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+          >
+            {{ editingMaintenanceId ? 'Save Changes' : 'Log Work' }}
+          </button>
+        </div>
+
+        <div v-if="maintenanceRecords.length === 0" class="text-gray-400 dark:text-gray-500 text-sm">
+          No maintenance records yet. Log the first work order above.
+        </div>
+
+        <div v-else class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-left">
+                <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Date</th>
+                <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Category</th>
+                <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Description</th>
+                <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Vendor</th>
+                <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">Cost</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="r in maintenanceRecords"
+                :key="r.id"
+                class="border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                <td class="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ r.service_date }}</td>
+                <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ formatLabel(r.category) }}</td>
+                <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                  {{ r.description }}
+                  <span v-if="r.warranty_expires" class="ml-2 text-xs text-amber-600 dark:text-amber-400">
+                    Warranty exp. {{ r.warranty_expires }}
+                  </span>
+                  <p v-if="r.notes" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ r.notes }}</p>
+                </td>
+                <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ r.vendor || '—' }}</td>
+                <td class="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">
+                  {{ parseFloat(r.cost) > 0 ? formatCurrency(r.cost) : '—' }}
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-3">
+                    <button
+                      @click="startEditMaintenance(r)"
+                      class="text-xs text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      @click="handleDeleteMaintenance(r.id)"
+                      class="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

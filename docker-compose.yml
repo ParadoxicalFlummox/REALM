@@ -1,20 +1,47 @@
 services:
   db:
     image: postgres:18-alpine3.22
-    container_name: db
+    container_name: tapre_db
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
     volumes:
-      - db_data:/var/lib/postgresql
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - tapre_net
+
+  backend:
+    image: paradoxicalflummox/tapre-backend:latest
+    build:
+      context: ./backend
+    container_name: tapre_backend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - db
+    networks:
+      - tapre_net
+
+  frontend:
+    image: paradoxicalflummox/tapre-frontend:latest
+    build:
+      context: ./frontend
+      args:
+        VITE_COMPANY_NAME: ${VITE_COMPANY_NAME:-TAP·re}
+    container_name: tapre_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - tapre_net
 
 volumes:
   db_data:
 
 networks:
-  default:
+  tapre_net:
     name: tapre_service_network
